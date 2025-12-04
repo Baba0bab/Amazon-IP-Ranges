@@ -26,7 +26,6 @@ def write_prefixes(prefixes, output_file):
     os.makedirs(os.path.dirname(output_file), exist_ok=True)
     print(f"[+] Writing {output_file}...")
 
-    os.makedirs(os.path.dirname(output_file), exist_ok=True)
     with open(output_file, "w") as f:
         for cidr in sorted(prefixes):
             f.write(cidr + "\n")
