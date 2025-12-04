@@ -14,13 +14,11 @@ def download_amazon_ranges():
 
 
 def extract_prefixes(data):
-    prefixes = []
-
+    prefixes = set()
     print("[+] Extracting IPv4 prefixes (ip_prefix)...")
     for entry in data.get("prefixes", []):  # IPv4 section
         if "ip_prefix" in entry:
-            prefixes.append(entry["ip_prefix"])
-
+            prefixes.add(entry["ip_prefix"])
     return prefixes
 
 
