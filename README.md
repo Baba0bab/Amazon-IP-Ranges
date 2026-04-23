@@ -5,3 +5,5 @@ Amazon provides a list of the IP addresses they use in a public file called ip-r
 I needed to convert this file into a RAW file for a specific use, which is why I created this Python program that takes this file and converts it to give me what I want.
 
 This file will be updated regularly, but if you want to receive updates yourself, feel free to clone this project.
+
+> https://raw.githubusercontent.com/Baba0bab/Amazon-IP-Ranges/refs/heads/main/target/amazon_ip_ranges.txt
