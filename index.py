@@ -24,15 +24,15 @@ def extract_prefixes(data):
 
 
 def expand_ips(prefixes):
-    all_ips = set()
     print("[+] Expanding CIDR to individual IPs...")
 
-    for cidr in prefixes:
-        net = ipaddress.ip_network(cidr)
-        for ip in net.hosts():
-            all_ips.add(str(ip))
+    # Merge overlapping subnets so each IP is only generated once, already sorted
+    networks = ipaddress.collapse_addresses(ipaddress.ip_network(cidr) for cidr in prefixes)
 
-    return all_ips
+    # IPs are generated one by one while writing instead of being stored in memory
+    for net in networks:
+        for ip in net:  # every address of the subnet, network and broadcast included
+            yield str(ip)
 
 
 def write_list(items, output_file):
@@ -40,7 +40,7 @@ def write_list(items, output_file):
     os.makedirs(os.path.dirname(output_file), exist_ok=True)
 
     with open(output_file, "w") as f:
-        for line in sorted(items):
+        for line in items:
             f.write(line + "\n")
 
     print(f"[✓] Done! File generated : {output_file}")
@@ -48,7 +48,7 @@ def write_list(items, output_file):
 
 def ask_user_choice():
     print("What do you want to extract?")
-    print("[1] All IP addresses (expand CIDRs) NOTE: This option currently uses up to 11 GB of RAM to run")
+    print("[1] All IP addresses (expand CIDRs) NOTE: The generated file is about 1.4 GB")
     print("[2] Keep the original CIDR subnets")
     while True:
         choice = input("> ").strip()
@@ -66,7 +66,7 @@ def main():
         result = expand_ips(prefixes)
         OUTPUT_FILE = os.path.join(OUTPUT_FOLDER, "amazon_ip_ranges_extended.txt")
     else:
-        result = prefixes
+        result = sorted(prefixes)
         OUTPUT_FILE = os.path.join(OUTPUT_FOLDER, "amazon_ip_ranges.txt")
 
     write_list(result, OUTPUT_FILE)
