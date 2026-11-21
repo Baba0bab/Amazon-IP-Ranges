@@ -83,7 +83,7 @@ def main():
         result = expand_ips(prefixes)
         output_file = os.path.join(OUTPUT_FOLDER, "amazon_ip_ranges_extended.txt")
     else:
-        result = sorted(prefixes)
+        result = sorted(prefixes, key=ipaddress.ip_network)  # numeric order, not text order
         output_file = os.path.join(OUTPUT_FOLDER, "amazon_ip_ranges.txt")
 
     write_list(result, output_file)
