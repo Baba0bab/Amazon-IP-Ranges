@@ -2,9 +2,11 @@ import requests
 import os
 import ipaddress
 import argparse
+import sys
 
 AMAZON_URL = "https://ip-ranges.amazonaws.com/ip-ranges.json"
 OUTPUT_FOLDER = "target"
+MIN_PREFIXES = 1000  # Amazon publishes ~8000 IPv4 prefixes, less than this means the data is broken
 
 
 def download_amazon_ranges():
@@ -23,6 +25,17 @@ def extract_prefixes(data):
     return prefixes
 
 
+def check_prefixes(prefixes):
+    # Stop before writing anything, so a bad download never replaces a good file
+    if len(prefixes) < MIN_PREFIXES:
+        sys.exit(f"[!] Only {len(prefixes)} prefixes found (at least {MIN_PREFIXES} expected), nothing written.")
+    for cidr in prefixes:
+        try:
+            ipaddress.IPv4Network(cidr)
+        except ValueError:
+            sys.exit(f"[!] Invalid prefix found: {cidr!r}, nothing written.")
+
+
 def expand_ips(prefixes):
     print("[+] Expanding CIDR to individual IPs...")
 
@@ -39,9 +52,12 @@ def write_list(items, output_file):
     print(f"[+] Writing {output_file}...")
     os.makedirs(os.path.dirname(output_file), exist_ok=True)
 
-    with open(output_file, "w") as f:
+    # Write to a temporary file first, the real file is only replaced once everything is written
+    tmp_file = output_file + ".tmp"
+    with open(tmp_file, "w") as f:
         for line in items:
             f.write(line + "\n")
+    os.replace(tmp_file, output_file)
 
     print(f"[✓] Done! File generated : {output_file}")
 
@@ -78,6 +94,7 @@ def main():
 
     data = download_amazon_ranges()
     prefixes = extract_prefixes(data)
+    check_prefixes(prefixes)
 
     if choice == "1":
         result = expand_ips(prefixes)
