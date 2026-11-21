@@ -1,10 +1,10 @@
 import requests
 import os
 import ipaddress
+import argparse
 
 AMAZON_URL = "https://ip-ranges.amazonaws.com/ip-ranges.json"
 OUTPUT_FOLDER = "target"
-OUTPUT_FILE = os.path.join(OUTPUT_FOLDER, "amazon_ip_ranges.txt")
 
 
 def download_amazon_ranges():
@@ -57,19 +57,36 @@ def ask_user_choice():
         print("Please enter 1 or 2.")
 
 
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Convert Amazon ip-ranges.json into a raw list. Without argument, asks what to extract."
+    )
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--expand", action="store_true", help="all IP addresses (same as choice 1)")
+    mode.add_argument("--cidr", action="store_true", help="original CIDR subnets (same as choice 2)")
+    return parser.parse_args()
+
+
 def main():
-    choice = ask_user_choice()
+    args = parse_args()
+    if args.expand:
+        choice = "1"
+    elif args.cidr:
+        choice = "2"
+    else:
+        choice = ask_user_choice()
+
     data = download_amazon_ranges()
     prefixes = extract_prefixes(data)
 
     if choice == "1":
         result = expand_ips(prefixes)
-        OUTPUT_FILE = os.path.join(OUTPUT_FOLDER, "amazon_ip_ranges_extended.txt")
+        output_file = os.path.join(OUTPUT_FOLDER, "amazon_ip_ranges_extended.txt")
     else:
         result = sorted(prefixes)
-        OUTPUT_FILE = os.path.join(OUTPUT_FOLDER, "amazon_ip_ranges.txt")
+        output_file = os.path.join(OUTPUT_FOLDER, "amazon_ip_ranges.txt")
 
-    write_list(result, OUTPUT_FILE)
+    write_list(result, output_file)
 
 
 if __name__ == "__main__":
