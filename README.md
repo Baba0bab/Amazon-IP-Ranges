@@ -4,9 +4,16 @@ Amazon provides a list of the IP addresses they use in a public file called ip-r
 
 I needed to convert this file into a RAW file for a specific use, which is why I created this Python program that takes this file and converts it to give me what I want.
 
-This file will be updated regularly, but if you want to receive updates yourself, feel free to clone this project.
+These files are updated automatically every day (around 6:00, Paris time) by a GitHub Actions workflow, only when Amazon changes its ranges. If you want to generate them yourself, feel free to clone this project.
 
-> https://raw.githubusercontent.com/Baba0bab/Amazon-IP-Ranges/refs/heads/main/target/amazon_ip_ranges.txt
+- Original CIDR subnets:
+  > https://raw.githubusercontent.com/Baba0bab/Amazon-IP-Ranges/refs/heads/main/target/amazon_ip_ranges.txt
+- Without nested subnets:
+  > https://raw.githubusercontent.com/Baba0bab/Amazon-IP-Ranges/refs/heads/main/target/amazon_ip_ranges_dedupe.txt
+- Compact (merged subnets, shortest list):
+  > https://raw.githubusercontent.com/Baba0bab/Amazon-IP-Ranges/refs/heads/main/target/amazon_ip_ranges_compact.txt
+
+The list of every single IP address (`--expand`) is too big for GitHub (about 1.5 GB), you have to generate it yourself.
 
 ## Usage
 
