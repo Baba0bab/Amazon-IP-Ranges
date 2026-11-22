@@ -12,9 +12,12 @@ MIN_PREFIXES = 1000  # Amazon publishes ~8000 IPv4 prefixes, less than this mean
 
 def download_amazon_ranges():
     print("[+] Downloading...")
-    r = requests.get(AMAZON_URL, timeout=10)
-    r.raise_for_status()
-    return r.json()
+    try:
+        r = requests.get(AMAZON_URL, timeout=10)
+        r.raise_for_status()
+        return r.json()
+    except requests.RequestException as e:  # no network, timeout, HTTP error or invalid JSON
+        sys.exit(f"[!] Download failed: {e}\n[!] Nothing written.")
 
 
 def extract_prefixes(data):
