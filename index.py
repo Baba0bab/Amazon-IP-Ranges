@@ -82,7 +82,7 @@ def write_list(items, output_file):
             f.write(line + "\n")
     os.replace(tmp_file, output_file)
 
-    print(f"[✓] Done! File generated : {output_file}")
+    print(f"[OK] Done! File generated : {output_file}")
 
 
 def ask_user_choice():
