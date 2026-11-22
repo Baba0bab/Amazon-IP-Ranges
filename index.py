@@ -78,10 +78,16 @@ def write_list(items, output_file):
 
     # Write to a temporary file first, the real file is only replaced once everything is written
     tmp_file = output_file + ".tmp"
-    with open(tmp_file, "w") as f:
-        for line in items:
-            f.write(line + "\n")
-    os.replace(tmp_file, output_file)
+    try:
+        with open(tmp_file, "w") as f:
+            for line in items:
+                f.write(line + "\n")
+        os.replace(tmp_file, output_file)
+    except BaseException:  # also catches Ctrl+C
+        # Don't leave a half-written temporary file behind
+        if os.path.exists(tmp_file):
+            os.remove(tmp_file)
+        raise
 
     print(f"[OK] Done! File generated : {output_file}")
 
