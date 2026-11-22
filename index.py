@@ -48,6 +48,21 @@ def expand_ips(prefixes):
             yield str(ip)
 
 
+def remove_nested(prefixes):
+    print("[+] Removing subnets already included in a bigger one...")
+
+    # Sorted by start address, bigger subnet first: a nested subnet always comes right after its parent
+    networks = sorted(ipaddress.ip_network(cidr) for cidr in prefixes)
+
+    kept = []
+    for net in networks:
+        if kept and net.subnet_of(kept[-1]):
+            continue
+        kept.append(net)
+
+    return [str(net) for net in kept]
+
+
 def write_list(items, output_file):
     print(f"[+] Writing {output_file}...")
     os.makedirs(os.path.dirname(output_file), exist_ok=True)
@@ -64,13 +79,14 @@ def write_list(items, output_file):
 
 def ask_user_choice():
     print("What do you want to extract?")
-    print("[1] All IP addresses (expand CIDRs) NOTE: The generated file is about 1.4 GB")
+    print("[1] All IP addresses (expand CIDRs) NOTE: The generated file is about 1.5 GB")
     print("[2] Keep the original CIDR subnets")
+    print("[3] Original CIDR subnets, without the ones already included in a bigger one")
     while True:
         choice = input("> ").strip()
-        if choice in ("1", "2"):
+        if choice in ("1", "2", "3"):
             return choice
-        print("Please enter 1 or 2.")
+        print("Please enter 1, 2 or 3.")
 
 
 def parse_args():
@@ -80,6 +96,7 @@ def parse_args():
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--expand", action="store_true", help="all IP addresses (same as choice 1)")
     mode.add_argument("--cidr", action="store_true", help="original CIDR subnets (same as choice 2)")
+    mode.add_argument("--dedupe", action="store_true", help="CIDR subnets without the nested ones (same as choice 3)")
     return parser.parse_args()
 
 
@@ -89,6 +106,8 @@ def main():
         choice = "1"
     elif args.cidr:
         choice = "2"
+    elif args.dedupe:
+        choice = "3"
     else:
         choice = ask_user_choice()
 
@@ -99,6 +118,9 @@ def main():
     if choice == "1":
         result = expand_ips(prefixes)
         output_file = os.path.join(OUTPUT_FOLDER, "amazon_ip_ranges_extended.txt")
+    elif choice == "3":
+        result = remove_nested(prefixes)
+        output_file = os.path.join(OUTPUT_FOLDER, "amazon_ip_ranges_dedupe.txt")
     else:
         result = sorted(prefixes, key=ipaddress.ip_network)  # numeric order, not text order
         output_file = os.path.join(OUTPUT_FOLDER, "amazon_ip_ranges.txt")
