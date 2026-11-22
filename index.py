@@ -63,6 +63,14 @@ def remove_nested(prefixes):
     return [str(net) for net in kept]
 
 
+def merge_subnets(prefixes):
+    print("[+] Merging overlapping and adjacent subnets...")
+
+    # collapse_addresses returns the smallest list of subnets covering the same IPs, already sorted
+    networks = ipaddress.collapse_addresses(ipaddress.ip_network(cidr) for cidr in prefixes)
+    return [str(net) for net in networks]
+
+
 def write_list(items, output_file):
     print(f"[+] Writing {output_file}...")
     os.makedirs(os.path.dirname(output_file), exist_ok=True)
@@ -82,11 +90,12 @@ def ask_user_choice():
     print("[1] All IP addresses (expand CIDRs) NOTE: The generated file is about 1.5 GB")
     print("[2] Keep the original CIDR subnets")
     print("[3] Original CIDR subnets, without the ones already included in a bigger one")
+    print("[4] Compact CIDR subnets (overlapping and adjacent ones merged, shortest list)")
     while True:
         choice = input("> ").strip()
-        if choice in ("1", "2", "3"):
+        if choice in ("1", "2", "3", "4"):
             return choice
-        print("Please enter 1, 2 or 3.")
+        print("Please enter 1, 2, 3 or 4.")
 
 
 def parse_args():
@@ -97,6 +106,7 @@ def parse_args():
     mode.add_argument("--expand", action="store_true", help="all IP addresses (same as choice 1)")
     mode.add_argument("--cidr", action="store_true", help="original CIDR subnets (same as choice 2)")
     mode.add_argument("--dedupe", action="store_true", help="CIDR subnets without the nested ones (same as choice 3)")
+    mode.add_argument("--compact", action="store_true", help="merged CIDR subnets, shortest list (same as choice 4)")
     return parser.parse_args()
 
 
@@ -108,6 +118,8 @@ def main():
         choice = "2"
     elif args.dedupe:
         choice = "3"
+    elif args.compact:
+        choice = "4"
     else:
         choice = ask_user_choice()
 
@@ -121,6 +133,9 @@ def main():
     elif choice == "3":
         result = remove_nested(prefixes)
         output_file = os.path.join(OUTPUT_FOLDER, "amazon_ip_ranges_dedupe.txt")
+    elif choice == "4":
+        result = merge_subnets(prefixes)
+        output_file = os.path.join(OUTPUT_FOLDER, "amazon_ip_ranges_compact.txt")
     else:
         result = sorted(prefixes, key=ipaddress.ip_network)  # numeric order, not text order
         output_file = os.path.join(OUTPUT_FOLDER, "amazon_ip_ranges.txt")
