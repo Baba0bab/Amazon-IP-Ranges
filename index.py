@@ -95,62 +95,80 @@ def write_list(items, output_file):
     print(f"[OK] Done! File generated : {output_file}")
 
 
+def sort_prefixes(prefixes):
+    return sorted(prefixes, key=ipaddress.ip_network)  # numeric order, not text order
+
+
+# Every mode in one place: choice number -> argument, menu text, --help text, function, output file
+MODES = {
+    "1": {
+        "arg": "--expand",
+        "menu": "All IP addresses (expand CIDRs) NOTE: The generated file is about 1.5 GB",
+        "help": "all IP addresses",
+        "function": expand_ips,
+        "file": "amazon_ip_ranges_extended.txt",
+    },
+    "2": {
+        "arg": "--cidr",
+        "menu": "Keep the original CIDR subnets",
+        "help": "original CIDR subnets",
+        "function": sort_prefixes,
+        "file": "amazon_ip_ranges.txt",
+    },
+    "3": {
+        "arg": "--dedupe",
+        "menu": "Original CIDR subnets, without the ones already included in a bigger one",
+        "help": "CIDR subnets without the nested ones",
+        "function": remove_nested,
+        "file": "amazon_ip_ranges_dedupe.txt",
+    },
+    "4": {
+        "arg": "--compact",
+        "menu": "Compact CIDR subnets (overlapping and adjacent ones merged, shortest list)",
+        "help": "merged CIDR subnets, shortest list",
+        "function": merge_subnets,
+        "file": "amazon_ip_ranges_compact.txt",
+    },
+}
+
+
 def ask_user_choice():
     print("What do you want to extract?")
-    print("[1] All IP addresses (expand CIDRs) NOTE: The generated file is about 1.5 GB")
-    print("[2] Keep the original CIDR subnets")
-    print("[3] Original CIDR subnets, without the ones already included in a bigger one")
-    print("[4] Compact CIDR subnets (overlapping and adjacent ones merged, shortest list)")
+    for choice, mode in MODES.items():
+        print(f"[{choice}] {mode['menu']}")
+
+    choices = list(MODES)
     while True:
         choice = input("> ").strip()
-        if choice in ("1", "2", "3", "4"):
+        if choice in MODES:
             return choice
-        print("Please enter 1, 2, 3 or 4.")
+        print(f"Please enter {', '.join(choices[:-1])} or {choices[-1]}.")
 
 
 def parse_args():
     parser = argparse.ArgumentParser(
         description="Convert Amazon ip-ranges.json into a raw list. Without argument, asks what to extract."
     )
-    mode = parser.add_mutually_exclusive_group()
-    mode.add_argument("--expand", action="store_true", help="all IP addresses (same as choice 1)")
-    mode.add_argument("--cidr", action="store_true", help="original CIDR subnets (same as choice 2)")
-    mode.add_argument("--dedupe", action="store_true", help="CIDR subnets without the nested ones (same as choice 3)")
-    mode.add_argument("--compact", action="store_true", help="merged CIDR subnets, shortest list (same as choice 4)")
+    group = parser.add_mutually_exclusive_group()
+    for choice, mode in MODES.items():
+        group.add_argument(
+            mode["arg"], dest="choice", action="store_const", const=choice,
+            help=f"{mode['help']} (same as choice {choice})",
+        )
     return parser.parse_args()
 
 
 def main():
     args = parse_args()
-    if args.expand:
-        choice = "1"
-    elif args.cidr:
-        choice = "2"
-    elif args.dedupe:
-        choice = "3"
-    elif args.compact:
-        choice = "4"
-    else:
-        choice = ask_user_choice()
+    choice = args.choice or ask_user_choice()
+    mode = MODES[choice]
 
     data = download_amazon_ranges()
     prefixes = extract_prefixes(data)
     check_prefixes(prefixes)
 
-    if choice == "1":
-        result = expand_ips(prefixes)
-        output_file = os.path.join(OUTPUT_FOLDER, "amazon_ip_ranges_extended.txt")
-    elif choice == "3":
-        result = remove_nested(prefixes)
-        output_file = os.path.join(OUTPUT_FOLDER, "amazon_ip_ranges_dedupe.txt")
-    elif choice == "4":
-        result = merge_subnets(prefixes)
-        output_file = os.path.join(OUTPUT_FOLDER, "amazon_ip_ranges_compact.txt")
-    else:
-        result = sorted(prefixes, key=ipaddress.ip_network)  # numeric order, not text order
-        output_file = os.path.join(OUTPUT_FOLDER, "amazon_ip_ranges.txt")
-
-    write_list(result, output_file)
+    result = mode["function"](prefixes)
+    write_list(result, os.path.join(OUTPUT_FOLDER, mode["file"]))
 
 
 if __name__ == "__main__":
