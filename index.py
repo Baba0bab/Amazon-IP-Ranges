@@ -5,7 +5,8 @@ import argparse
 import sys
 
 AMAZON_URL = "https://ip-ranges.amazonaws.com/ip-ranges.json"
-OUTPUT_FOLDER = "target"
+# Next to index.py, whatever folder the script is launched from
+OUTPUT_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "target")
 MIN_PREFIXES = 1000  # Amazon publishes ~8000 IPv4 prefixes, less than this means the data is broken
 
 
